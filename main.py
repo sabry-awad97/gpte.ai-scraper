@@ -85,3 +85,8 @@ class WebScraper:
         except Exception as e:
             print(f"Error: {e}")
             return None
+
+
+scraper = WebScraper("https://gpte.ai", page_num=1)
+scraper.extract_data()
+scraper.save_to_excel("data.xlsx")
