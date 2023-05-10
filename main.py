@@ -72,3 +72,16 @@ class WebScraper:
                 break
 
         print("Data extraction complete!")
+
+    def save_to_excel(self, file_name):
+        print("Saving data to Excel...")
+        if not file_name.endswith(".xlsx"):
+            file_name += ".xlsx"
+
+        try:
+            df = pd.DataFrame(self.data)
+            df.to_excel(file_name, index=False)
+            print(f"Data saved to {file_name} successfully!")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
