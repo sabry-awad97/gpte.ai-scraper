@@ -39,21 +39,21 @@ class WebScraper:
                 print("Error: Failed to fetch page")
                 return None
 
-            posts = self.soup.find_all("article", {"class": "post-card"})
+            tools = self.soup.find_all("article", {"class": "post-card"})
 
-            for post in posts:
-                name: str = post.find(
+            for tool in tools:
+                name: str = tool.find(
                     "h2", {"class": "post-card-title"}).text.strip()
-                tags = post.find_all(
+                tags = tool.find_all(
                     "span", {"class": "post-card-primary-tag"})
                 types = ", ".join([tag.text.strip() for tag in tags])
-                image_url = post.find(
+                image_url = tool.find(
                     "img", {"class": "post-card-image"})["src"]
                 if not urlparse(image_url).scheme:
                     image_url = urljoin(self.url, image_url)
-                url: str = urljoin(self.url, post.find("a",
+                url: str = urljoin(self.url, tool.find("a",
                                                        {"class": "post-card-image-link"})["href"])
-                description: str = post.find(
+                description: str = tool.find(
                     "div", {"class": "post-card-excerpt"}).text.strip()
 
                 self.data.append({
