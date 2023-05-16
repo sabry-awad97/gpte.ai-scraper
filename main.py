@@ -89,4 +89,4 @@ class WebScraper:
 
 scraper = WebScraper("https://gpte.ai", page_num=1)
 scraper.extract_data()
-scraper.save_to_excel("data.xlsx")
+scraper.save_to_excel("gpte-data.xlsx")
