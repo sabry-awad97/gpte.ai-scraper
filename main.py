@@ -62,15 +62,26 @@ class WebScraper:
 
         print(f"Data extracted from page {page_num}.")
 
-    def scrape_pages(self, start_page, end_page):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for page_num in range(start_page, end_page + 1):
-                futures.append(executor.submit(self.scrape_page, page_num))
+    def scrape_pages(self, batch_size):
+        page_num = 1
+        while True:
+            print(
+                f"Scraping pages {page_num} to {page_num + batch_size - 1}...")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for i in range(batch_size):
+                    futures.append(executor.submit(
+                        self.scrape_page, page_num + i))
 
-            for future in concurrent.futures.as_completed(futures):
-                if future.exception() is not None:
-                    print(f"Error: {future.exception()}")
+                for future in concurrent.futures.as_completed(futures):
+                    if future.exception() is not None:
+                        print(f"Error: {future.exception()}")
+
+            if not self.data:
+                print("No more pages to scrape.")
+                break
+
+            page_num += batch_size
 
         print("Data extraction complete!")
 
@@ -89,5 +100,5 @@ class WebScraper:
 
 
 scraper = WebScraper("https://gpte.ai")
-scraper.scrape_pages(1, 5)
+scraper.scrape_pages(5)
 scraper.save_to_excel("gpte-data.xlsx")
