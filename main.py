@@ -27,7 +27,7 @@ class WebScraper:
         soup = BeautifulSoup(page, "html.parser")
         return soup
 
-    def extract_data(self, page_num):
+    def scrape_page(self, page_num):
         print(f"Extracting data from page {page_num}...")
         soup = self.get_page(page_num)
 
@@ -66,7 +66,7 @@ class WebScraper:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
             for page_num in range(start_page, end_page + 1):
-                futures.append(executor.submit(self.extract_data, page_num))
+                futures.append(executor.submit(self.scrape_page, page_num))
 
             for future in concurrent.futures.as_completed(futures):
                 if future.exception() is not None:
