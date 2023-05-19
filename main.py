@@ -3,17 +3,19 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
-import concurrent.futures
 
 
 class WebScraper:
-    def __init__(self, url):
+    def __init__(self, url, page_num=1):
         self.url: str = url
+        self.page_num: int = page_num
+        self.page: bytes | None = None
+        self.soup: BeautifulSoup | None = None
         self.data: List[Dict[str, str]] = []
 
-    def get_page(self, page_num):
+    def get_page(self):
         try:
-            url = f"{self.url}/page/{page_num}/"
+            url = f"{self.url}/page/{self.page_num}/"
             response = requests.get(url)
         except requests.exceptions.RequestException as e:
             print(f"Error: {e}")
@@ -23,54 +25,51 @@ class WebScraper:
             print(f"Error: {response.status_code}")
             return None
 
-        page = response.content
-        soup = BeautifulSoup(page, "html.parser")
-        return soup
+        self.page = response.content
+        self.soup = BeautifulSoup(self.page, "html.parser")
+        return self.soup
 
-    def scrape_page(self, page_num):
-        print(f"Extracting data from page {page_num}...")
-        soup = self.get_page(page_num)
+    def extract_data(self):
+        print(f"Extracting data from {self.url}...")
+        while True:
+            if self.soup is None:
+                self.get_page()
 
-        if soup is None:
-            print("Error: Failed to fetch page")
-            return None
+            if self.soup is None:
+                print("Error: Failed to fetch page")
+                return None
 
-        tools = soup.find_all("article", {"class": "post-card"})
+            tools = self.soup.find_all("article", {"class": "post-card"})
 
-        for tool in tools:
-            name: str = tool.find(
-                "h2", {"class": "post-card-title"}).text.strip()
-            tags = tool.find_all(
-                "span", {"class": "post-card-primary-tag"})
-            types = ", ".join([tag.text.strip() for tag in tags])
-            image_url = tool.find(
-                "img", {"class": "post-card-image"})["src"]
-            if not urlparse(image_url).scheme:
-                image_url = urljoin(self.url, image_url)
-            url: str = urljoin(self.url, tool.find("a",
-                                                   {"class": "post-card-image-link"})["href"])
-            description: str = tool.find(
-                "div", {"class": "post-card-excerpt"}).text.strip()
+            for tool in tools:
+                name: str = tool.find(
+                    "h2", {"class": "post-card-title"}).text.strip()
+                tags = tool.find_all(
+                    "span", {"class": "post-card-primary-tag"})
+                types = ", ".join([tag.text.strip() for tag in tags])
+                image_url = tool.find(
+                    "img", {"class": "post-card-image"})["src"]
+                if not urlparse(image_url).scheme:
+                    image_url = urljoin(self.url, image_url)
+                url: str = urljoin(self.url, tool.find("a",
+                                                       {"class": "post-card-image-link"})["href"])
+                description: str = tool.find(
+                    "div", {"class": "post-card-excerpt"}).text.strip()
 
-            self.data.append({
-                "name": name,
-                "type": types,
-                "image": image_url,
-                "url": url,
-                "description": description
-            })
+                self.data.append({
+                    "name": name,
+                    "type": types,
+                    "image": image_url,
+                    "url": url,
+                    "description": description
+                })
 
-        print(f"Data extracted from page {page_num}.")
+            print(f"Data extracted from page {self.page_num}.")
 
-    def scrape_pages(self, start_page, end_page):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for page_num in range(start_page, end_page + 1):
-                futures.append(executor.submit(self.scrape_page, page_num))
-
-            for future in concurrent.futures.as_completed(futures):
-                if future.exception() is not None:
-                    print(f"Error: {future.exception()}")
+            self.page_num += 1
+            self.soup = None
+            if not self.get_page():
+                break
 
         print("Data extraction complete!")
 
@@ -88,6 +87,6 @@ class WebScraper:
             return None
 
 
-scraper = WebScraper("https://gpte.ai")
-scraper.scrape_pages(1, 80)
+scraper = WebScraper("https://gpte.ai", page_num=1)
+scraper.extract_data()
 scraper.save_to_excel("gpte-data.xlsx")
